@@ -100,10 +100,11 @@ pub fn new(args: &cli::Cli, filepath: &std::path::Path) -> Result<()> {
         }
     }
 
-    // TODO: We need to check that the file does not exist first.
     // First, create the given file:
-    std::fs::File::create(absolute_filepath)
-        .context(format!("failed to create a file at {}", filepath.display()))?;
+    if !absolute_filepath.exists() {
+        std::fs::File::create(absolute_filepath)
+            .context(format!("failed to create a file at {}", filepath.display()))?;
+    }
 
     // Then, open it in $EDITOR:
     open_editor_at_path(filepath, args)?;
