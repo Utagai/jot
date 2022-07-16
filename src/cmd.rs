@@ -68,7 +68,7 @@ fn exec_cmd(
     Ok((trimmed_stdout, exit_code))
 }
 
-fn open_editor_at_path(filepath: &std::path::Path, args: &cli::Cli) -> Result<()> {
+fn open_editor_at_path(filepath: &std::path::Path, args: &cli::Args) -> Result<()> {
     static EDITOR_ENV_VARNAME: &str = "EDITOR";
     let editor = get_env_var(EDITOR_ENV_VARNAME)?;
     let mut editor_exec = Command::new(editor);
@@ -87,7 +87,7 @@ fn open_editor_at_path(filepath: &std::path::Path, args: &cli::Cli) -> Result<()
 }
 
 fn relative_path_to_absolute(
-    args: &cli::Cli,
+    args: &cli::Args,
     filepath: &std::path::PathBuf,
 ) -> Result<std::path::PathBuf> {
     let mut absolute_filepath = filepath.to_owned();
@@ -108,7 +108,7 @@ fn relative_path_to_absolute(
     Ok(absolute_filepath)
 }
 
-pub fn new(args: &cli::Cli, filepath: &std::path::PathBuf) -> Result<()> {
+pub fn new(args: &cli::Args, filepath: &std::path::PathBuf) -> Result<()> {
     let absolute_filepath = relative_path_to_absolute(args, filepath)?;
 
     // First, create the given file:
@@ -123,7 +123,7 @@ pub fn new(args: &cli::Cli, filepath: &std::path::PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn exec_custom_invocation_cmd(mut cmd: Command, args: &cli::Cli) -> Result<(String, bool)> {
+fn exec_custom_invocation_cmd(mut cmd: Command, args: &cli::Args) -> Result<(String, bool)> {
     if !args.capture_std {
         // Allow stderr/stdin to pass through for applications like fzf.
         cmd.stdin(Stdio::inherit()).stderr(Stdio::inherit());
@@ -142,7 +142,7 @@ fn exec_custom_invocation_cmd(mut cmd: Command, args: &cli::Cli) -> Result<(Stri
     ))
 }
 
-pub fn edit(args: &cli::Cli) -> Result<()> {
+pub fn edit(args: &cli::Args) -> Result<()> {
     // First, we should execute the finder invocation and get a chosen filepath.
     let shell = get_env_var(SHELL_ENV_VARNAME)?;
     let mut finder_cmd = Command::new(shell);
@@ -166,7 +166,7 @@ pub fn edit(args: &cli::Cli) -> Result<()> {
     Ok(())
 }
 
-pub fn list(args: &cli::Cli, subpath: Option<std::path::PathBuf>) -> Result<()> {
+pub fn list(args: &cli::Args, subpath: Option<std::path::PathBuf>) -> Result<()> {
     // First, change working directory into the given list_path.
     // Note that this could possibly be a no-op if none was specified.
     let listing_path = subpath.map_or(Ok(args.base_dir.clone()), |path| {
@@ -204,7 +204,7 @@ pub fn list(args: &cli::Cli, subpath: Option<std::path::PathBuf>) -> Result<()> 
     Ok(())
 }
 
-pub fn sync(args: &cli::Cli) -> Result<()> {
+pub fn sync(args: &cli::Args) -> Result<()> {
     static GIT_CMD: &str = "git";
 
     // First, git pull to fetch and merge upstream changes.

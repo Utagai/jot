@@ -5,7 +5,7 @@ mod cli;
 mod cmd;
 
 fn main() -> Result<()> {
-    let args = cli::Cli::parse();
+    let args = cli::Args::parse();
     std::env::set_current_dir(&args.base_dir).context(format!(
         "failed to change jot's working directory to {}",
         args.base_dir.display(),

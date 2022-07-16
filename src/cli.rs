@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 
-// TODO: Rename to Args?
 /// Write notes.
 ///
 ///
@@ -39,7 +38,7 @@ use clap::{Parser, Subcommand};
 /// process, but stderr is piped.
 /// When invoking git, all standard streams are inherited.
 #[derive(Parser, Debug)]
-pub struct Cli {
+pub struct Args {
     // NOTE: If you ever update any flag or subcommand's name, please search and replace all
     // instances of the flag name, as we may have references to it in doc strings or error messages
     // that won't be picked up by an LSP rename.
@@ -136,5 +135,5 @@ pub enum Command {
 #[test]
 fn verify_cli() {
     use clap::CommandFactory;
-    Cli::command().debug_assert();
+    Args::command().debug_assert();
 }
