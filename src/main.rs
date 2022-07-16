@@ -8,7 +8,7 @@ fn main() {
     match args.command.unwrap_or(cli::Command::Edit) {
         cli::Command::Edit => edit(),
         cli::Command::List { .. } => list(),
-        cli::Command::Sync => synch(),
+        cli::Command::Synch => synch(),
     }
 }
 

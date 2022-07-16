@@ -46,5 +46,6 @@ pub enum Command {
     // that's why. Maybe rename to Synch but keep the flag name Sync?
     /// 'Synchronizes' the notes. This is really just an attempt to git pull, then git push. If an
     /// error (namely a merge conflict) occurs, an error is propagated to stderr.
-    Sync,
+    #[clap(name = "sync")]
+    Synch,
 }
