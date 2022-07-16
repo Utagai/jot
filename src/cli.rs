@@ -4,6 +4,9 @@ use clap::{Parser, Subcommand};
 ///
 ///
 ///
+/// Jot has no configuration file. It only has CLI flags and such. Jot commands and
+/// command-specific arguments come at the end of its usage, so jot is meant to be aliased.
+///
 /// Jot is based on top of git. The base-dir containining all the notes is just a git repository.
 /// This also means that you are able to go into that repository and mess with it as you see fit.
 /// This can make jot fail, so mess with it at your own risk. In fact, jot is remarkably stupid.

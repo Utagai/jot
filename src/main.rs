@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -20,6 +20,7 @@ fn main() -> Result<()> {
     let status = Command::new("git")
         .arg("rev-parse")
         .arg("--git-dir")
+        .stdout(Stdio::null())
         .status()
         .context("failed to determine if base-dir is a git repository")?;
     if !status.success() {
