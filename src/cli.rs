@@ -7,9 +7,9 @@ use clap::{Parser, Subcommand};
 /// non-zero exit code. There is also no restriction placed on the invocation itself. Invocations
 /// can be quite literally anything, from /bin/ls to fzf to a custom Python script.
 ///
-/// Note that invocations are executed by passing the invocation to the user's $SHELL. This means
-/// your invocation can actually be written in a shell's scripting language, and make use of things
-/// like environment variable substitution (jot passes its environment down to its child
+/// Note that custom invocations are executed by passing the invocation to the user's $SHELL. This
+/// means your invocation can actually be written in a shell's scripting language, and make use of
+/// things like environment variable substitution (jot passes its environment down to its child
 /// processes). Note that there may be differences in how different shells support command
 /// execution, for example, in bash, one uses `-c`:
 ///
@@ -27,8 +27,10 @@ use clap::{Parser, Subcommand};
 ///
 ///     * Roll out your own logging.
 ///
+/// Finally, note that custom invocations _do not include_ invoking $EDITOR or git.
 /// When invoking $EDITOR, the standard streams stdout and stdin are inherited by the editor
-/// process. stderr is piped.
+/// process, but stderr is piped.
+/// When invoking git, all standard streams are inherited.
 #[derive(Parser, Debug)]
 pub struct Cli {
     // NOTE: If you ever update any flag or subcommand's name, please search and replace all
