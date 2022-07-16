@@ -1,5 +1,10 @@
 use clap::{Parser, Subcommand};
 
+// TODO: For the command invocation section, we should mention how we handle the command -- we
+// execute it via the user's $SHELL.
+// TODO: We no longer capture stderr for debug prints anymore since we need to not take stderr to
+// support things like fzf. We should note this exception.
+// TODO: We call call debug_assert() in a test as per clap documentation recommendations.
 /// Helps you jot notes.
 ///
 /// For arguments that take a command invocation, only the output from stdout is used for
