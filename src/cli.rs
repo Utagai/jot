@@ -66,6 +66,11 @@ pub struct Cli {
     /// Which flag to specify to the user's $SHELL that allows for command execution. e.g. bash uses `-c`.
     #[clap(default_value = "-c", short, long, value_parser)]
     pub shell_cmd_flag: String,
+
+    /// Do not print any error information if an invocation fails due to exit code 130 (CTRL+C).
+    /// Likely only valid on unix/*nix-like OSes. Default: true.
+    #[clap(default_value_t = true, short, long, value_parser)]
+    pub quiet_on_ctrl_c: bool,
 }
 
 #[derive(Subcommand, Debug)]

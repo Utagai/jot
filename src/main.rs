@@ -25,11 +25,18 @@ fn main() -> Result<()> {
 static SHELL_ENV_VARNAME: &str = "SHELL";
 static EDITOR_ENV_VARNAME: &str = "EDITOR";
 
+static CTRL_C_EXIT_CODE: i32 = 130;
+
 fn get_env_var(varname: &str) -> Result<String> {
     var(varname).context(format!("failed to find ${} in environment", varname))
 }
 
-fn exec_cmd(label: &str, mut cmd: Command, captured_stderr: bool) -> Result<String> {
+fn exec_cmd(
+    label: &str,
+    mut cmd: Command,
+    captured_stderr: bool,
+    quiet_on_ctrl_c: bool,
+) -> Result<(String, Option<i32>)> {
     let program = cmd.get_program();
     let joined_args_str = cmd
         .get_args()
@@ -48,19 +55,26 @@ fn exec_cmd(label: &str, mut cmd: Command, captured_stderr: bool) -> Result<Stri
         "<jot: stderr not captured>"
     };
 
-    // TODO: We should have an option for being quiet about non-zero exit codes.
-    // TODO: Should print more information on the unsuccessful exit, e.g. code or signal.
+    let trimmed_stdout = stdout_output.trim().to_string();
+
+    let exit_code = exec.status.code();
     if !exec.status.success() {
+        if quiet_on_ctrl_c && exit_code == Some(CTRL_C_EXIT_CODE) {
+            return Ok((trimmed_stdout, exit_code));
+        }
+
+        // TODO: This format string is getting gnarly as fuck... we need to break it up somehow...
         return Err(anyhow!(
-            "{} (`{}`) exited unsuccessfully with non-zero exit code\nstdout:\n\"{}\"\nstderr:\n\"{}\"",
+            "{} (`{}`) exited unsuccessfully with non-zero exit code ({})\n\tstdout:\n\t\"{}\"\n\tstderr:\n\t\"{}\"",
             label,
             invocation,
+            exit_code.map_or("N/A".to_string(), |code| code.to_string()),
             stdout_output,
             stderr_output,
         ));
     }
 
-    Ok(stdout_output.trim().to_string())
+    Ok((trimmed_stdout, exit_code))
 }
 
 fn edit(args: &cli::Cli) -> Result<()> {
@@ -76,17 +90,35 @@ fn edit(args: &cli::Cli) -> Result<()> {
         }) // Allow stderr to pass through for applications like fzf.
         .stderr(Stdio::inherit()); // Allow stderr to pass through for applications like fzf.
 
-    let finder_stdout = exec_cmd("finder", finder_cmd, args.capture_stderr)?;
+    let (finder_stdout, exit_code) = exec_cmd(
+        "finder",
+        finder_cmd,
+        args.capture_stderr,
+        args.quiet_on_ctrl_c,
+    )?;
+
     let filepath = Path::new(&finder_stdout);
+    if args.quiet_on_ctrl_c && exit_code == Some(CTRL_C_EXIT_CODE) {
+        // If asked to be quiet on CTRL+C, then exec_cmd() will not have returned error. However,
+        // if so, we don't want to make use of whatever stdout may have returned, since the finder
+        // program was terminated prematurely (presumably). So, instead, just return early and
+        // don't mess with $EDITOR.
+        return Ok(());
+    }
+
     let editor = get_env_var(EDITOR_ENV_VARNAME)?;
 
-    // TODO: This command handling is code duplication. We can and should refactor.
     let mut editor_exec = Command::new(editor);
     editor_exec
         .arg(filepath)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit());
-    exec_cmd(&format!("${}", EDITOR_ENV_VARNAME), editor_exec, true)?;
+    exec_cmd(
+        &format!("${}", EDITOR_ENV_VARNAME),
+        editor_exec,
+        true,
+        args.quiet_on_ctrl_c,
+    )?;
 
     Ok(())
 }
