@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-/// Helps you jot notes.
+/// Write notes.
 ///
 /// For arguments that take a command invocation, only the output from stdout is used for
 /// execution. An invocation is only considered an error if it returns with a
