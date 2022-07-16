@@ -3,9 +3,11 @@ use std::{
     env::var,
     path::Path,
     process::{Command, Stdio},
+    time::SystemTime,
 };
 
 use anyhow::{bail, Context, Result};
+use humantime::format_rfc3339_seconds;
 
 use crate::cli;
 
@@ -79,9 +81,7 @@ fn open_editor_at_path(filepath: &std::path::Path, args: &cli::Cli) -> Result<()
         args.quiet_on_ctrl_c,
     )?;
 
-    // TODO: Should sync here if specified.
-
-    Ok(())
+    sync(args)
 }
 
 pub fn new(args: &cli::Cli, filepath: &std::path::Path) -> Result<()> {
@@ -100,6 +100,7 @@ pub fn new(args: &cli::Cli, filepath: &std::path::Path) -> Result<()> {
         }
     }
 
+    // TODO: We need to check that the file does not exist first.
     // First, create the given file:
     std::fs::File::create(absolute_filepath)
         .context(format!("failed to create a file at {}", filepath.display()))?;
@@ -155,16 +156,37 @@ pub fn list() -> Result<()> {
 pub fn sync(args: &cli::Cli) -> Result<()> {
     static GIT_CMD: &str = "git";
 
+    // First, git pull to fetch and merge upstream changes.
+    // If we encounter an issue, namely a merge conflict, this will propagate an error and we will
+    // abort on trying to merge our recent changes.
     let mut git_pull_exec = Command::new(GIT_CMD);
     git_pull_exec
+        .arg("pull")
         .arg(&args.git_remote_name)
         .arg(&args.git_upstream_branch);
-    exec_cmd("git pull", git_pull_exec, true, args.quiet_on_ctrl_c)?;
+    exec_cmd("pulling", git_pull_exec, true, args.quiet_on_ctrl_c)
+        .context("failed to pull upstream changes, please fix the issue and run jot sync")?;
 
+    // Second, if we get here, git pull worked. In that case, let's stage our local changes:
+    let mut git_pull_exec = Command::new(GIT_CMD);
+    git_pull_exec.arg("add").arg("-A");
+    exec_cmd("staging", git_pull_exec, true, args.quiet_on_ctrl_c)?;
+
+    // Third, commit these staged changes:
+    let mut git_commit_exec = Command::new(GIT_CMD);
+    git_commit_exec
+        .arg("commit")
+        .arg("-m")
+        .arg(format!("{}", format_rfc3339_seconds(SystemTime::now())));
+    exec_cmd("committing", git_commit_exec, true, args.quiet_on_ctrl_c)?;
+
+    // Fourth, push to upstream to finish the sync.
     let mut git_push_exec = Command::new(GIT_CMD);
     git_push_exec
+        .arg("push")
         .arg(&args.git_remote_name)
         .arg(&args.git_upstream_branch);
-    exec_cmd("git push", git_push_exec, true, args.quiet_on_ctrl_c)?;
+    exec_cmd("pushing", git_push_exec, true, args.quiet_on_ctrl_c)
+        .context("failed to push to upstream, please fix the issue and run jot sync")?;
     Ok(())
 }

@@ -2,6 +2,12 @@ use clap::{Parser, Subcommand};
 
 /// Write notes.
 ///
+///
+///
+/// Jot is based on top of git. The base-dir containining all the notes is just a git repository.
+/// This also means that you are able to go into that repository and mess with it as you see fit.
+/// This can make jot fail, so mess with it at your own risk.
+///
 /// For arguments that take a command invocation, only the output from stdout is used for
 /// execution. An invocation is only considered an error if it returns with a
 /// non-zero exit code. There is also no restriction placed on the invocation itself. Invocations
@@ -107,8 +113,12 @@ pub enum Command {
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
-    /// 'Synchronize' the notes. This is really just an attempt to git pull, git add -A, then git
-    /// push. If an error (namely a merge conflict) occurs, an error is propagated to stderr.
+    // TODO: custom-commit-msg.
+    /// 'Synchronize' the notes. This is really just an attempt to git pull, git add -A, git
+    /// commit, then finally, git push. If an error (namely a merge conflict) occurs, an error is
+    /// propagated to stderr. If you want to be prompted for a custom commit message, specify the
+    /// custom-commit-msg flag, otherwise, jot will set the message to the current local system
+    /// time in RFC3339 format.
     #[clap(name = "sync")]
     Synch,
 }
