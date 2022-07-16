@@ -6,7 +6,10 @@ use clap::{Parser, Subcommand};
 ///
 /// Jot is based on top of git. The base-dir containining all the notes is just a git repository.
 /// This also means that you are able to go into that repository and mess with it as you see fit.
-/// This can make jot fail, so mess with it at your own risk.
+/// This can make jot fail, so mess with it at your own risk. In fact, jot is remarkably stupid.
+/// All it does to sync your notes is to pull from upstream, add any changes in the repository,
+/// commit them, and then push back to upstream. It fails pretty much immediately the moment
+/// anything goes wrong.
 ///
 /// For arguments that take a command invocation, only the output from stdout is used for
 /// execution. An invocation is only considered an error if it returns with a
