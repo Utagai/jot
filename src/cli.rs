@@ -1,7 +1,5 @@
 use clap::{Parser, Subcommand};
 
-// TODO: For the command invocation section, we should mention how we handle the command -- we
-// execute it via the user's $SHELL.
 // TODO: We call call debug_assert() in a test as per clap documentation recommendations.
 /// Helps you jot notes.
 ///
@@ -9,6 +7,16 @@ use clap::{Parser, Subcommand};
 /// execution. An invocation is only considered an error if it returns with a
 /// non-zero exit code. There is also no restriction placed on the invocation itself. Invocations
 /// can be quite literally anything, from /bin/ls to fzf to a custom Python script.
+///
+/// Note that invocations are executed by passing the invocation to the user's $SHELL. This means
+/// your invocation can actually be written in a shell's scripting language, and make use of things
+/// like environment variable substitution (jot passes its environment down to its child
+/// processes). Note that there may be differences in how different shells support command
+/// execution, for example, in bash, one uses `-c`:
+///
+/// bash -c 'echo foo'
+///
+/// If your shell differs, please set the shell_cmd_flag flag.
 ///
 /// Standard streams stdin & stderr are inherited by the the child process. This is done to support
 /// applications like fzf, which need stdin and stderr for their UI. This means that if your
@@ -53,6 +61,10 @@ pub struct Cli {
     /// diagnostics to stderr will not be propagated from jot. Default: false.
     #[clap(default_value_t = false, short, long, value_parser)]
     pub capture_stderr: bool,
+
+    /// Which flag to specify to the user's $SHELL that allows for command execution. e.g. bash uses `-c`.
+    #[clap(default_value = "-c", short, long, value_parser)]
+    pub shell_cmd_flag: String,
 }
 
 #[derive(Subcommand, Debug)]

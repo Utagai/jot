@@ -28,8 +28,7 @@ fn edit(args: &cli::Cli) -> Result<()> {
     // TODO: Possibly export this var + context to a mini helper.
     let shell = var("SHELL").context("failed to find $SHELL in environment")?;
     let finder_exec = Command::new(shell)
-        // TODO: We should make the -c configurable since it can depend on the shell.
-        .arg("-c")
+        .arg(&args.shell_cmd_flag)
         .arg(&args.finder)
         .stdin(if args.capture_stderr {
             Stdio::piped()
@@ -71,6 +70,7 @@ fn edit(args: &cli::Cli) -> Result<()> {
         .stdout(Stdio::inherit())
         .output()?;
     if !editor_exec.status.success() {
+        // TODO: Should include stderr output.
         return Err(anyhow!(
             "editor exited unsuccessfully with non-zero exit code"
         ));
