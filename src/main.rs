@@ -63,9 +63,12 @@ fn exec_cmd(
             return Ok((trimmed_stdout, exit_code));
         }
 
-        // TODO: This format string is getting gnarly as fuck... we need to break it up somehow...
         return Err(anyhow!(
-            "{} (`{}`) exited unsuccessfully with non-zero exit code ({})\n\tstdout:\n\t\"{}\"\n\tstderr:\n\t\"{}\"",
+            "{} (`{}`) exited unsuccessfully with non-zero exit code ({})\n\
+            \tstdout:\n\
+            \t\"{}\"\n\
+            \tstderr:\n\
+            \t\"{}\"",
             label,
             invocation,
             exit_code.map_or("N/A".to_string(), |code| code.to_string()),
