@@ -39,31 +39,31 @@ pub struct Cli {
     #[clap(subcommand)]
     pub command: Option<Command>,
 
-    /// The base directory under which all notes handled by jot must reside. This must be a git
+    /// Base directory under which all notes handled by jot must reside. This must be a git
     /// repository.
     #[clap(short, long, parse(from_os_str))]
     pub base_dir: std::path::PathBuf,
 
-    /// A command invocation that prints a single filepath to stdout upon completion.
+    /// Specifies a command invocation that prints a single filepath to stdout upon completion.
     #[clap(short, long, value_parser)]
     pub finder: String,
 
-    /// A command invocation that, given a path (relative to base_dir) as a positional argument,
-    /// prints a listing to stdout.
+    /// Specifies a command invocation that, given a path (relative to base_dir) as a positional
+    /// argument, prints a listing to stdout.
     #[clap(short, long, value_parser)]
     pub lister: String,
 
-    /// Whether or not entering edit mode should incur a sync after finishing. Default: true.
+    /// Editing should finish with a sync automatically. Default: true.
     #[clap(default_value_t = true, short, long, value_parser)]
     pub edit_syncs: bool,
 
-    /// Whether or not stderr should be captured. If not captured, the child process inherits it
-    /// from the parent. Note that if this value is false, invocations that print things like error
-    /// diagnostics to stderr will not be propagated from jot. Default: false.
+    /// Capture stderr. If not captured, the child process inherits stderr from the parent. Note
+    /// that if this value is false, invocations that print things like error diagnostics to stderr
+    /// will not be propagated directly by jot. Default: false.
     #[clap(default_value_t = false, short, long, value_parser)]
     pub capture_stderr: bool,
 
-    /// Which flag to specify to the user's $SHELL that allows for command execution. e.g. bash uses `-c`.
+    /// Flag to specify to the user's $SHELL that allows for command execution. e.g. bash uses `-c`.
     #[clap(default_value = "-c", short, long, value_parser)]
     pub shell_cmd_flag: String,
 
@@ -78,14 +78,14 @@ pub enum Command {
     /// Dispatch to a program that outputs a filepath to open in $EDITOR. Edit mode need not be
     /// explicitly called. Calling jot without any subcommand defaults to edit mode.
     Edit,
-    /// Dispatches to a program (e.g. tree) that outputs a listing of all notes.
+    /// Dispatch to a program (e.g. tree) that outputs a listing of all notes.
     List {
         /// An argument for a subtree in the tree from which
         /// to begin the listing.
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
-    /// 'Synchronizes' the notes. This is really just an attempt to git pull, then git push. If an
+    /// 'Synchronize' the notes. This is really just an attempt to git pull, then git push. If an
     /// error (namely a merge conflict) occurs, an error is propagated to stderr.
     #[clap(name = "sync")]
     Synch,
