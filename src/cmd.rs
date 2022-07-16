@@ -19,6 +19,19 @@ fn get_env_var(varname: &str) -> Result<String> {
     var(varname).context(format!("failed to find ${} in environment", varname))
 }
 
+fn format_output(output: &str) -> String {
+    if output.is_empty() {
+        return "\t<empty>".to_string();
+    }
+
+    output
+        .trim()
+        .split('\n')
+        .map(|line| format!("\t! {}", line))
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
 fn exec_cmd(
     label: &str,
     mut cmd: Command,
@@ -51,17 +64,19 @@ fn exec_cmd(
             return Ok((trimmed_stdout, exit_code));
         }
 
+        // TODO: Prepend a string like > or | or something to the lines outputted from
+        // stdout/stderr?
         bail!(
             "{} (`{}`) exited unsuccessfully with non-zero exit code ({})\n\
-            \tstdout:\n\
-            \t\"{}\"\n\
-            \tstderr:\n\
-            \t\"{}\"",
+            === stdout:\n\n\
+            {}\n\n\
+            === stderr:\n\n\
+            {}\n",
             label,
             invocation,
             exit_code.map_or("N/A".to_string(), |code| code.to_string()),
-            stdout_output,
-            stderr_output,
+            format_output(stdout_output),
+            format_output(stderr_output),
         );
     }
 
@@ -206,6 +221,8 @@ pub fn list(args: &cli::Args, subpath: Option<std::path::PathBuf>) -> Result<()>
 
 pub fn sync(args: &cli::Args) -> Result<()> {
     static GIT_CMD: &str = "git";
+
+    // TODO: We should only run the following chain of git commands if there are new changes.
 
     // First, git pull to fetch and merge upstream changes.
     // If we encounter an issue, namely a merge conflict, this will propagate an error and we will
