@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 
-// TODO: We call call debug_assert() in a test as per clap documentation recommendations.
 /// Helps you jot notes.
 ///
 /// For arguments that take a command invocation, only the output from stdout is used for
@@ -83,4 +82,12 @@ pub enum Command {
     /// error (namely a merge conflict) occurs, an error is propagated to stderr.
     #[clap(name = "sync")]
     Synch,
+}
+
+// Proactively check for bad configurations.
+// https://github.com/clap-rs/clap/blob/v3.2.12/examples/tutorial_derive/05_01_assert.rs
+#[test]
+fn verify_cli() {
+    use clap::CommandFactory;
+    Cli::command().debug_assert();
 }
