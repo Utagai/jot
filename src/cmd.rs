@@ -29,7 +29,7 @@ fn exec_cmd(
         .map(|os_str| os_str.to_string_lossy())
         .collect::<Vec<Cow<'_, str>>>()
         .join(" ");
-    let invocation = format!("{:?} {:?}", program, joined_args_str);
+    let invocation = format!("{} {}", program.to_string_lossy(), joined_args_str);
     let exec = cmd
         .output()
         .context(format!("failed to execute {}: `{}`", label, invocation,))?;
