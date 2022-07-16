@@ -10,41 +10,41 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 pub struct Cli {
     #[clap(subcommand)]
-    command: Option<Command>,
+    pub command: Option<Command>,
 
     /// The base directory under which all notes handled by jot must reside. This must be a git
     /// repository.
     #[clap(short, long, parse(from_os_str))]
-    base_dir: std::path::PathBuf,
+    pub base_dir: std::path::PathBuf,
 
     /// A command invocation that prints a single filepath to stdout upon completion.
     #[clap(short, long, value_parser)]
-    finder: String,
+    pub finder: String,
 
     /// A command invocation that, given a path (relative to base_dir) as a positional argument,
     /// prints a listing to stdout.
     #[clap(short, long, value_parser)]
-    lister: String,
+    pub lister: String,
 
     /// Whether or not entering edit mode should incur a sync after finishing.
     #[clap(default_value_t = true, short, long, value_parser)]
-    edit_syncs: bool,
+    pub edit_syncs: bool,
 }
 
 #[derive(Subcommand, Debug)]
-enum Command {
+pub enum Command {
     /// Dispatch to a program that outputs a filepath to open in $EDITOR. Edit mode need not be
     /// explicitly called. Calling jot without any subcommand defaults to edit mode.
     Edit,
     /// Dispatches to a program (e.g. tree) that outputs a listing of all notes.
     List {
-        // TODO: Does value_parser work here?
         /// An argument for a subtree in the tree from which
         /// to begin the listing.
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
-    /// 'Synchronizes' the notes. This is really just an attempt to git pull. If an error (namely a
-    /// merge conflict) occurs, an error is propagated to stderr.
+    // that's why. Maybe rename to Synch but keep the flag name Sync?
+    /// 'Synchronizes' the notes. This is really just an attempt to git pull, then git push. If an
+    /// error (namely a merge conflict) occurs, an error is propagated to stderr.
     Sync,
 }
