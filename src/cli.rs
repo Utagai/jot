@@ -3,6 +3,9 @@ use clap::{Parser, Subcommand};
 /// Write notes.
 ///
 ///
+/// Jot is a _very thin_ wrapper around the local filesystem and git. It makes use of these things
+/// to store, as well as track and distribute notes. Jot is really just a thin API around the two
+/// and does not do anything all that special.
 ///
 /// Jot has no configuration file. It only has CLI flags and such. Jot commands and
 /// command-specific arguments come at the end of its usage, so jot is meant to be aliased.
