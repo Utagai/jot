@@ -5,7 +5,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 
 use crate::cli;
 
@@ -47,7 +47,7 @@ fn exec_cmd(
             return Ok((trimmed_stdout, exit_code));
         }
 
-        return Err(anyhow!(
+        bail!(
             "{} (`{}`) exited unsuccessfully with non-zero exit code ({})\n\
             \tstdout:\n\
             \t\"{}\"\n\
@@ -58,15 +58,61 @@ fn exec_cmd(
             exit_code.map_or("N/A".to_string(), |code| code.to_string()),
             stdout_output,
             stderr_output,
-        ));
+        );
     }
 
     Ok((trimmed_stdout, exit_code))
 }
 
-pub fn edit(args: &cli::Cli) -> Result<()> {
-    static SHELL_ENV_VARNAME: &str = "SHELL";
+fn open_editor_at_path(filepath: &std::path::Path, args: &cli::Cli) -> Result<()> {
     static EDITOR_ENV_VARNAME: &str = "EDITOR";
+    let editor = get_env_var(EDITOR_ENV_VARNAME)?;
+    let mut editor_exec = Command::new(editor);
+    editor_exec
+        .arg(filepath)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit());
+    exec_cmd(
+        &format!("${}", EDITOR_ENV_VARNAME),
+        editor_exec,
+        true,
+        args.quiet_on_ctrl_c,
+    )?;
+
+    // TODO: Should sync here if specified.
+
+    Ok(())
+}
+
+pub fn new(args: &cli::Cli, filepath: &std::path::Path) -> Result<()> {
+    let mut absolute_filepath = filepath.to_owned();
+    if !filepath.is_absolute() {
+        absolute_filepath = args.base_dir.join(absolute_filepath);
+    } else {
+        // If the path is absolute, let's check that it leads to something underneath base_dir.
+        // Otherwise, we're creating files outside of our turf, and that is not going to fly (even
+        // though the user told us to do it).
+        if !absolute_filepath.starts_with(&args.base_dir) {
+            bail!(
+                "given path must be below base_dir; {} is not",
+                absolute_filepath.display()
+            )
+        }
+    }
+
+    // First, create the given file:
+    std::fs::File::create(absolute_filepath)
+        .context(format!("failed to create a file at {}", filepath.display()))?;
+
+    // Then, open it in $EDITOR:
+    open_editor_at_path(filepath, args)?;
+
+    Ok(())
+}
+
+pub fn edit(args: &cli::Cli) -> Result<()> {
+    // First, we should execute the finder invocation and get a chosen filepath.
+    static SHELL_ENV_VARNAME: &str = "SHELL";
     let shell = get_env_var(SHELL_ENV_VARNAME)?;
     let mut finder_cmd = Command::new(shell);
     finder_cmd
@@ -86,7 +132,6 @@ pub fn edit(args: &cli::Cli) -> Result<()> {
         args.quiet_on_ctrl_c,
     )?;
 
-    let filepath = Path::new(&finder_stdout);
     if args.quiet_on_ctrl_c && exit_code == Some(CTRL_C_EXIT_CODE) {
         // If asked to be quiet on CTRL+C, then exec_cmd() will not have returned error. However,
         // if so, we don't want to make use of whatever stdout may have returned, since the finder
@@ -95,19 +140,10 @@ pub fn edit(args: &cli::Cli) -> Result<()> {
         return Ok(());
     }
 
-    let editor = get_env_var(EDITOR_ENV_VARNAME)?;
+    let filepath = Path::new(&finder_stdout);
 
-    let mut editor_exec = Command::new(editor);
-    editor_exec
-        .arg(filepath)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit());
-    exec_cmd(
-        &format!("${}", EDITOR_ENV_VARNAME),
-        editor_exec,
-        true,
-        args.quiet_on_ctrl_c,
-    )?;
+    // Then, open the editor at that path.
+    open_editor_at_path(filepath, args)?;
 
     Ok(())
 }

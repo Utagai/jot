@@ -48,7 +48,7 @@ pub struct Cli {
     #[clap(short, long, value_parser)]
     pub finder: String,
 
-    /// Specifies a command invocation that, given a path (relative to base_dir) as a positional
+    /// Specifies a command invocation that, given a path (relative to base-dir) as a positional
     /// argument, prints a listing to stdout.
     #[clap(short, long, value_parser)]
     pub lister: String,
@@ -83,13 +83,27 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+    /// Creates a new note at the specified path and opens it in $EDITOR. If a file exists at the
+    /// path already, this command behaves similarly to Edit if its dispatched program had returned
+    /// the given path.
+    New {
+        /// The path at which to create the new note. This path may be absolute, or, if relative,
+        /// must be relative to base-dir. This path, regardless of absoluteness, must reside
+        /// beneath base_dir.
+        #[clap(value_parser)]
+        path: std::path::PathBuf,
+    },
     /// Dispatch to a program that outputs a filepath to open in $EDITOR. Edit mode need not be
-    /// explicitly called. Calling jot without any subcommand defaults to edit mode.
+    /// explicitly called. Calling jot without any subcommand defaults to edit mode. Note that the
+    /// finder program need not return a filepath that exists. If the filepath does not exist,
+    /// $EDITOR will be called nevertheless on the path. Most editors will open a blank page, and
+    /// then create the file on save. This makes Edit roughly equivalent to New, the primary
+    /// difference being that New creates the file prior to opening it in $EDITOR.
     Edit,
     /// Dispatch to a program (e.g. tree) that outputs a listing of all notes.
     List {
         /// The path representing the subtree from which to begin the listing. This is optional and
-        /// if omitted, prints the contents of base_dir from its root.
+        /// if omitted, prints the contents of base-dir from its root.
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
