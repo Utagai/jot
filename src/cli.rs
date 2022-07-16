@@ -2,18 +2,31 @@ use clap::{Parser, Subcommand};
 
 // TODO: For the command invocation section, we should mention how we handle the command -- we
 // execute it via the user's $SHELL.
-// TODO: We no longer capture stderr for debug prints anymore since we need to not take stderr to
-// support things like fzf. We should note this exception.
 // TODO: We call call debug_assert() in a test as per clap documentation recommendations.
 /// Helps you jot notes.
 ///
 /// For arguments that take a command invocation, only the output from stdout is used for
-/// execution. Output from stderr is essentially only redirected to the terminal from jot, but is
-/// not used for any execution. An invocation is only considered an error if it returns with a
+/// execution. An invocation is only considered an error if it returns with a
 /// non-zero exit code. There is also no restriction placed on the invocation itself. Invocations
 /// can be quite literally anything, from /bin/ls to fzf to a custom Python script.
+///
+/// Standard streams stdin & stderr are inherited by the the child process. This is done to support
+/// applications like fzf, which need stdin and stderr for their UI. This means that if your
+/// application uses stderr to log error information, you should either:
+///
+///     * Set the capture_stderr flag.
+///
+///     * Use stdout and return a non-zero exit code.
+///
+///     * Roll out your own logging.
+///
+/// When invoking $EDITOR, the standard streams stdout and stdin are inherited by the editor
+/// process. stderr is piped.
 #[derive(Parser, Debug)]
 pub struct Cli {
+    // NOTE: If you ever update any flag or subcommand's name, please search and replace all
+    // instances of the flag name, as we may have references to it in doc strings or error messages
+    // that won't be picked up by an LSP rename.
     #[clap(subcommand)]
     pub command: Option<Command>,
 
@@ -31,9 +44,15 @@ pub struct Cli {
     #[clap(short, long, value_parser)]
     pub lister: String,
 
-    /// Whether or not entering edit mode should incur a sync after finishing.
+    /// Whether or not entering edit mode should incur a sync after finishing. Default: true.
     #[clap(default_value_t = true, short, long, value_parser)]
     pub edit_syncs: bool,
+
+    /// Whether or not stderr should be captured. If not captured, the child process inherits it
+    /// from the parent. Note that if this value is false, invocations that print things like error
+    /// diagnostics to stderr will not be propagated from jot. Default: false.
+    #[clap(default_value_t = false, short, long, value_parser)]
+    pub capture_stderr: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -48,7 +67,6 @@ pub enum Command {
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
-    // that's why. Maybe rename to Synch but keep the flag name Sync?
     /// 'Synchronizes' the notes. This is really just an attempt to git pull, then git push. If an
     /// error (namely a merge conflict) occurs, an error is propagated to stderr.
     #[clap(name = "sync")]

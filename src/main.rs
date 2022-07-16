@@ -31,22 +31,34 @@ fn edit(args: &cli::Cli) -> Result<()> {
         // TODO: We should make the -c configurable since it can depend on the shell.
         .arg("-c")
         .arg(&args.finder)
-        .stdin(Stdio::inherit()) // Allow stderr to pass through for applications like fzf.
+        .stdin(if args.capture_stderr {
+            Stdio::piped()
+        } else {
+            Stdio::inherit()
+        }) // Allow stderr to pass through for applications like fzf.
         .stderr(Stdio::inherit()) // Allow stderr to pass through for applications like fzf.
         .output()
         .context(format!("failed to execute finder: `{}`", args.finder))?;
+
+    let stdout_output = std::str::from_utf8(finder_exec.stdout.as_ref())?;
+    let stderr_output = if args.capture_stderr {
+        std::str::from_utf8(finder_exec.stderr.as_ref())?
+    } else {
+        "<jot: stderr not captured; consider using the capture_stderr flag>"
+    };
 
     // TODO: We should have an option for being quiet about non-zero exit codes.
     if !finder_exec.status.success() {
         // TODO: Should print more information on the unsuccessful exit, e.g. code or signal.
         // TODO: And ditto for below:
         return Err(anyhow!(
-            "finder (`{}`) exited unsuccessfully with non-zero exit code",
+            "finder (`{}`) exited unsuccessfully with non-zero exit code\nstdout:\n\"{}\"\nstderr:\n\"{}\"",
             args.finder,
+            stdout_output,
+            stderr_output,
         ));
     }
 
-    let stdout_output = std::str::from_utf8(finder_exec.stdout.as_ref())?;
     let filepath = Path::new(stdout_output.trim());
     println!("filepath: {}", filepath.display());
     let editor = var("EDITOR").context("failed to find $EDITOR in environment")?;
