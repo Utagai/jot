@@ -22,11 +22,16 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+static SHELL_ENV_VAR: &str = "SHELL";
+static EDITOR_ENV_VAR: &str = "EDITOR";
+
 fn edit(args: &cli::Cli) -> Result<()> {
     println!("Edit mode!, cwd: {}", current_dir().unwrap().display());
-    // TODO: Export this env var to a const? Same with $EDITOR below.
     // TODO: Possibly export this var + context to a mini helper.
-    let shell = var("SHELL").context("failed to find $SHELL in environment")?;
+    // TODO: Can we actually implement .context() for option and result such that we introduce a
+    // contextf() which automatically runs format!()?
+    let shell =
+        var(SHELL_ENV_VAR).context(format!("failed to find ${} in environment", SHELL_ENV_VAR))?;
     let finder_exec = Command::new(shell)
         .arg(&args.shell_cmd_flag)
         .arg(&args.finder)
@@ -59,8 +64,8 @@ fn edit(args: &cli::Cli) -> Result<()> {
     }
 
     let filepath = Path::new(stdout_output.trim());
-    println!("filepath: {}", filepath.display());
-    let editor = var("EDITOR").context("failed to find $EDITOR in environment")?;
+    let editor = var(EDITOR_ENV_VAR)
+        .context(format!("failed to find ${} in environment", EDITOR_ENV_VAR))?;
     println!("EDITOR: {}", editor);
 
     // TODO: This command handling is code duplication. We can and should refactor.
