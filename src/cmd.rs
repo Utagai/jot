@@ -114,11 +114,22 @@ pub fn edit(args: &cli::Cli) -> Result<()> {
 }
 
 pub fn list() -> Result<()> {
-    println!("List mode!");
     Ok(())
 }
 
-pub fn synch() -> Result<()> {
-    println!("Sync mode!");
+pub fn sync(args: &cli::Cli) -> Result<()> {
+    static GIT_CMD: &str = "git";
+
+    let mut git_pull_exec = Command::new(GIT_CMD);
+    git_pull_exec
+        .arg(&args.git_remote_name)
+        .arg(&args.git_upstream_branch);
+    exec_cmd("git pull", git_pull_exec, true, args.quiet_on_ctrl_c)?;
+
+    let mut git_push_exec = Command::new(GIT_CMD);
+    git_push_exec
+        .arg(&args.git_remote_name)
+        .arg(&args.git_upstream_branch);
+    exec_cmd("git push", git_push_exec, true, args.quiet_on_ctrl_c)?;
     Ok(())
 }

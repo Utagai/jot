@@ -16,7 +16,7 @@ fn main() -> Result<()> {
     match args.command.as_ref().unwrap_or(&cli::Command::Edit) {
         cli::Command::Edit => cmd::edit(&args),
         cli::Command::List { .. } => cmd::list(),
-        cli::Command::Synch => cmd::synch(),
+        cli::Command::Synch => cmd::sync(&args),
     }?;
 
     Ok(())

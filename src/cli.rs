@@ -88,13 +88,13 @@ pub enum Command {
     Edit,
     /// Dispatch to a program (e.g. tree) that outputs a listing of all notes.
     List {
-        /// An argument for a subtree in the tree from which
-        /// to begin the listing.
+        /// The path representing the subtree from which to begin the listing. This is optional and
+        /// if omitted, prints the contents of base_dir from its root.
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
-    /// 'Synchronize' the notes. This is really just an attempt to git pull, then git push. If an
-    /// error (namely a merge conflict) occurs, an error is propagated to stderr.
+    /// 'Synchronize' the notes. This is really just an attempt to git pull, git add -A, then git
+    /// push. If an error (namely a merge conflict) occurs, an error is propagated to stderr.
     #[clap(name = "sync")]
     Synch,
 }
