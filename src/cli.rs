@@ -63,7 +63,7 @@ pub struct Cli {
     #[clap(default_value_t = false, short, long, value_parser)]
     pub capture_stderr: bool,
 
-    /// Flag to specify to the user's $SHELL that allows for command execution. e.g. bash uses `-c`.
+    /// Specifies the flag for the user's $SHELL that allows for command execution. e.g. bash uses `-c`.
     #[clap(default_value = "-c", short, long, value_parser)]
     pub shell_cmd_flag: String,
 
@@ -71,6 +71,14 @@ pub struct Cli {
     /// Likely only valid on unix/*nix-like OSes. Default: true.
     #[clap(default_value_t = true, short, long, value_parser)]
     pub quiet_on_ctrl_c: bool,
+
+    /// Specifies the name of the remote to push/pull to/from.
+    #[clap(default_value = "origin", short = 'r', long, value_parser)]
+    pub git_remote_name: String,
+
+    /// Specifies the name of the remote branch to push/pull to/from.
+    #[clap(default_value = "main", short = 'u', long, value_parser)]
+    pub git_upstream_branch: String,
 }
 
 #[derive(Subcommand, Debug)]
