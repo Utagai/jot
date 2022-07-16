@@ -9,9 +9,6 @@ use anyhow::{anyhow, Context, Result};
 
 use crate::cli;
 
-static SHELL_ENV_VARNAME: &str = "SHELL";
-static EDITOR_ENV_VARNAME: &str = "EDITOR";
-
 static CTRL_C_EXIT_CODE: i32 = 130;
 
 fn get_env_var(varname: &str) -> Result<String> {
@@ -68,6 +65,8 @@ fn exec_cmd(
 }
 
 pub fn edit(args: &cli::Cli) -> Result<()> {
+    static SHELL_ENV_VARNAME: &str = "SHELL";
+    static EDITOR_ENV_VARNAME: &str = "EDITOR";
     let shell = get_env_var(SHELL_ENV_VARNAME)?;
     let mut finder_cmd = Command::new(shell);
     finder_cmd
