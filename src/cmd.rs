@@ -175,10 +175,16 @@ pub fn sync(args: &cli::Cli) -> Result<()> {
 
     // Third, commit these staged changes:
     let mut git_commit_exec = Command::new(GIT_CMD);
-    git_commit_exec
-        .arg("commit")
-        .arg("-m")
-        .arg(format!("{}", format_rfc3339_seconds(SystemTime::now())));
+    git_commit_exec.arg("commit");
+    if args.git_custom_commit_msg {
+        git_commit_exec
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit());
+    } else {
+        git_commit_exec
+            .arg("-m")
+            .arg(format!("{}", format_rfc3339_seconds(SystemTime::now())));
+    }
     exec_cmd("committing", git_commit_exec, true, args.quiet_on_ctrl_c)?;
 
     // Fourth, push to upstream to finish the sync.

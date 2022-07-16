@@ -85,6 +85,11 @@ pub struct Cli {
     /// Specifies the name of the remote branch to push/pull to/from.
     #[clap(default_value = "main", short = 'u', long, value_parser)]
     pub git_upstream_branch: String,
+
+    /// Prompt for a custom git commit message when syncing. This will default to whatever behavior
+    /// your git config suggests for a bare `git commit`.
+    #[clap(default_value_t = false, short = 'm', long, value_parser)]
+    pub git_custom_commit_msg: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -113,11 +118,10 @@ pub enum Command {
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
-    // TODO: custom-commit-msg.
     /// 'Synchronize' the notes. This is really just an attempt to git pull, git add -A, git
     /// commit, then finally, git push. If an error (namely a merge conflict) occurs, an error is
     /// propagated to stderr. If you want to be prompted for a custom commit message, specify the
-    /// custom-commit-msg flag, otherwise, jot will set the message to the current local system
+    /// git-custom-commit-msg flag, otherwise, jot will set the message to the current local system
     /// time in RFC3339 format.
     #[clap(name = "sync")]
     Synch,
