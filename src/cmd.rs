@@ -11,6 +11,8 @@ use humantime::format_rfc3339_seconds;
 
 use crate::cli;
 
+static SHELL_ENV_VARNAME: &str = "SHELL";
+
 static CTRL_C_EXIT_CODE: i32 = 130;
 
 fn get_env_var(varname: &str) -> Result<String> {
@@ -84,7 +86,10 @@ fn open_editor_at_path(filepath: &std::path::Path, args: &cli::Cli) -> Result<()
     sync(args)
 }
 
-pub fn new(args: &cli::Cli, filepath: &std::path::Path) -> Result<()> {
+fn relative_path_to_absolute(
+    args: &cli::Cli,
+    filepath: &std::path::PathBuf,
+) -> Result<std::path::PathBuf> {
     let mut absolute_filepath = filepath.to_owned();
     if !filepath.is_absolute() {
         absolute_filepath = args.base_dir.join(absolute_filepath);
@@ -100,6 +105,12 @@ pub fn new(args: &cli::Cli, filepath: &std::path::Path) -> Result<()> {
         }
     }
 
+    Ok(absolute_filepath)
+}
+
+pub fn new(args: &cli::Cli, filepath: &std::path::PathBuf) -> Result<()> {
+    let absolute_filepath = relative_path_to_absolute(args, filepath)?;
+
     // First, create the given file:
     if !absolute_filepath.exists() {
         std::fs::File::create(absolute_filepath)
@@ -112,33 +123,38 @@ pub fn new(args: &cli::Cli, filepath: &std::path::Path) -> Result<()> {
     Ok(())
 }
 
+fn exec_custom_invocation_cmd(mut cmd: Command, args: &cli::Cli) -> Result<(String, bool)> {
+    if !args.capture_std {
+        // Allow stderr/stdin to pass through for applications like fzf.
+        cmd.stdin(Stdio::inherit()).stderr(Stdio::inherit());
+    }
+
+    let (finder_stdout, exit_code) =
+        exec_cmd("finder", cmd, args.capture_std, args.quiet_on_ctrl_c)?;
+
+    // If asked to be quiet on CTRL+C, then exec_cmd() will not have returned error. However, if
+    // so, we don't want to make use of whatever stdout may have returned, since the finder program
+    // was terminated prematurely (presumably). If so, return true as our boolean half of the
+    // tuple, to indicate an early return from the caller.
+    Ok((
+        finder_stdout,
+        args.quiet_on_ctrl_c && exit_code == Some(CTRL_C_EXIT_CODE),
+    ))
+}
+
 pub fn edit(args: &cli::Cli) -> Result<()> {
     // First, we should execute the finder invocation and get a chosen filepath.
-    static SHELL_ENV_VARNAME: &str = "SHELL";
     let shell = get_env_var(SHELL_ENV_VARNAME)?;
     let mut finder_cmd = Command::new(shell);
-    finder_cmd
-        .arg(&args.shell_cmd_flag)
-        .arg(&args.finder)
-        .stdin(if args.capture_stderr {
-            Stdio::piped()
-        } else {
-            Stdio::inherit()
-        }) // Allow stderr to pass through for applications like fzf.
-        .stderr(Stdio::inherit()); // Allow stderr to pass through for applications like fzf.
+    finder_cmd.arg(&args.shell_cmd_flag).arg(&args.finder);
 
-    let (finder_stdout, exit_code) = exec_cmd(
-        "finder",
-        finder_cmd,
-        args.capture_stderr,
-        args.quiet_on_ctrl_c,
-    )?;
+    if !args.capture_std {
+        // Allow stderr/stdin to pass through for applications like fzf.
+        finder_cmd.stdin(Stdio::inherit()).stderr(Stdio::inherit());
+    }
 
-    if args.quiet_on_ctrl_c && exit_code == Some(CTRL_C_EXIT_CODE) {
-        // If asked to be quiet on CTRL+C, then exec_cmd() will not have returned error. However,
-        // if so, we don't want to make use of whatever stdout may have returned, since the finder
-        // program was terminated prematurely (presumably). So, instead, just return early and
-        // don't mess with $EDITOR.
+    let (finder_stdout, should_exit_early) = exec_custom_invocation_cmd(finder_cmd, args)?;
+    if should_exit_early {
         return Ok(());
     }
 
@@ -150,7 +166,41 @@ pub fn edit(args: &cli::Cli) -> Result<()> {
     Ok(())
 }
 
-pub fn list() -> Result<()> {
+pub fn list(args: &cli::Cli, subpath: Option<std::path::PathBuf>) -> Result<()> {
+    // First, change working directory into the given list_path.
+    // Note that this could possibly be a no-op if none was specified.
+    let listing_path = subpath.map_or(Ok(args.base_dir.clone()), |path| {
+        relative_path_to_absolute(args, &path)
+    })?;
+    std::env::set_current_dir(&listing_path).context(format!(
+        "failed to change jot's working directory to {} for listing",
+        listing_path.display(),
+    ))?;
+
+    let shell = get_env_var(SHELL_ENV_VARNAME)?;
+    let mut lister_cmd = Command::new(shell);
+    lister_cmd.arg(&args.shell_cmd_flag).arg(&args.lister);
+
+    if !args.capture_std {
+        // Allow stderr/stdin to pass through for applications like fzf.
+        lister_cmd.stdin(Stdio::inherit()).stderr(Stdio::inherit());
+    }
+
+    let (lister_stdout, should_exit_early) = exec_custom_invocation_cmd(lister_cmd, args)?;
+    if should_exit_early {
+        return Ok(());
+    }
+
+    println!("{}", lister_stdout);
+
+    // Before we can return, we need to reset the current working directory. Technically, since jot
+    // is only ran for a single command at a time, this is actually not necessary, so really, we're
+    // just being polite. I don't think there really is a reason to care, it just bothers me.
+    std::env::set_current_dir(&args.base_dir).context(format!(
+        "failed to change jot's working directory to {} for listing",
+        args.base_dir.display(),
+    ))?;
+
     Ok(())
 }
 

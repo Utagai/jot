@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 
+// TODO: Rename to Args?
 /// Write notes.
 ///
 ///
@@ -27,7 +28,7 @@ use clap::{Parser, Subcommand};
 /// applications like fzf, which need stdin and stderr for their UI. This means that if your
 /// application uses stderr to log error information, you should either:
 ///
-///     * Set the capture_stderr flag.
+///     * Set the capture_std flag.
 ///
 ///     * Use stdout and return a non-zero exit code.
 ///
@@ -63,11 +64,11 @@ pub struct Cli {
     #[clap(default_value_t = true, short, long, value_parser)]
     pub edit_syncs: bool,
 
-    /// Capture stderr. If not captured, the child process inherits stderr from the parent. Note
-    /// that if this value is false, invocations that print things like error diagnostics to stderr
-    /// will not be propagated directly by jot. Default: false.
+    /// Capture stderr/stdin for custom invocations. If not captured, the child process inherits
+    /// stderr from the parent. Note that if this value is false, invocations that print things
+    /// like error diagnostics to stderr will not be propagated directly by jot. Default: false.
     #[clap(default_value_t = false, short, long, value_parser)]
-    pub capture_stderr: bool,
+    pub capture_std: bool,
 
     /// Specifies the flag for the user's $SHELL that allows for command execution. e.g. bash uses `-c`.
     #[clap(default_value = "-c", short, long, value_parser)]
@@ -100,7 +101,7 @@ pub enum Command {
     New {
         /// The path at which to create the new note. This path may be absolute, or, if relative,
         /// must be relative to base-dir. This path, regardless of absoluteness, must reside
-        /// beneath base_dir.
+        /// beneath base-dir.
         #[clap(value_parser)]
         path: std::path::PathBuf,
     },
@@ -114,7 +115,10 @@ pub enum Command {
     /// Dispatch to a program (e.g. tree) that outputs a listing of all notes.
     List {
         /// The path representing the subtree from which to begin the listing. This is optional and
-        /// if omitted, prints the contents of base-dir from its root.
+        /// if omitted, runs the invocation from base-dir. This path may be absolute, or, if relative,
+        /// must be relative to base-dir. This path, regardless of absoluteness, must reside
+        /// beneath base-dir. Note that this is effectively setting the working directory for the
+        /// invocation, it does not get passed to the invocation.
         #[clap(value_parser)]
         subpath: Option<std::path::PathBuf>,
     },
