@@ -1,5 +1,5 @@
 # `jot`
-Minimalism + scribbling.
+WIP. Minimalism + scribbling.
 
 The entirety of `jot`'s documentation can be found in its `help` output:
 ```
